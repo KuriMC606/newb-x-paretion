@@ -72,7 +72,7 @@ vec3 lensflare(vec2 uv,vec2 pos)
 	vec3 c = vec3(0.0,0.0,0.0);
 
 	c.r+=f2+f4+f5+f6; c.g+=f22+f42+f52+f62; c.b+=f23+f43+f53+f63;
-	c = c*1.3 - vec3(length(uvd)*.05);
+	c = c*1.3 - vec3(length(uvd)*.05, length(uvd)*.05, length(uvd)*.05);
 	c+=vec3(f0, f0, f0);
 
 	return c;
