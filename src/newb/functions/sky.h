@@ -1,14 +1,6 @@
 #ifndef SKY_H
 #define SKY_H
 
-#include "detection.h"
-
-struct nl_skycolor {
-  vec3 zenith;
-  vec3 horizon;
-  vec3 horizonEdge;
-};
-
 // rainbow spectrum
 vec3 spectrum(float x) {
     vec3 s = vec3(x-0.5, x, x+0.5);
@@ -68,11 +60,12 @@ vec3 getHorizonEdgeCol(vec3 horizonCol, float rainFactor, vec3 FOG_COLOR) {
 }
 
 // 1D sky with three color gradient
-vec3 renderOverworldSky(nl_skycolor skycol, vec3 viewDir) {
+vec3 renderOverworldSky(vec3 horizonEdgeCol, vec3 horizonColor, vec3 zenithColor, vec3 viewDir) {
   float h = 1.0-viewDir.y*viewDir.y;
   float hsq = h*h;
   if (viewDir.y < 0.0) {
-    hsq = 0.4 + 0.6*hsq*hsq;
+    hsq *= hsq*hsq;
+    hsq *= hsq;
   }
 
   // gradient 1  h^16
@@ -82,8 +75,8 @@ vec3 renderOverworldSky(nl_skycolor skycol, vec3 viewDir) {
   float gradient2 = 0.6*gradient1 + 0.4*hsq;
   gradient1 *= gradient1;
 
-  vec3 sky = mix(skycol.horizon, skycol.horizonEdge, gradient1);
-  sky = mix(skycol.zenith, skycol.horizon, gradient2);
+  vec3 sky = mix(horizonColor, horizonEdgeCol, gradient1);
+  sky = mix(zenithColor, horizonColor, gradient2);
 
   return sky;
 }
@@ -127,19 +120,19 @@ vec3 renderEndSky(vec3 horizonCol, vec3 zenithCol, vec3 viewDir, float t) {
   return sky;
 }
 
-vec3 nlRenderSky(nl_skycolor skycol, nl_environment env, vec3 viewDir, vec3 FOG_COLOR, float t) {
+vec3 nlRenderSky(vec3 horizonEdgeCol, vec3 horizonCol, vec3 zenithCol, vec3 viewDir, vec3 FOG_COLOR, float t, float rainFactor, bool end, bool underWater, bool nether) {
   vec3 sky;
   viewDir.y = -viewDir.y;
 
-  if (env.end) {
-    sky = renderEndSky(skycol.horizon, skycol.zenith, viewDir, t);
+  if (end) {
+    sky = renderEndSky(horizonCol, zenithCol, viewDir, t);
   } else {
-    sky = renderOverworldSky(skycol, viewDir);
+    sky = renderOverworldSky(horizonEdgeCol, horizonCol, zenithCol, viewDir);
     #ifdef NL_RAINBOW
-      sky += mix(NL_RAINBOW_CLEAR, NL_RAINBOW_RAIN, env.rainFactor)*spectrum((viewDir.z+0.6)*8.0)*max(viewDir.y, 0.0)*FOG_COLOR.g;
+      sky += mix(NL_RAINBOW_CLEAR, NL_RAINBOW_RAIN, rainFactor)*spectrum((viewDir.z+0.6)*8.0)*max(viewDir.y, 0.0)*FOG_COLOR.g;
     #endif
     #ifdef NL_UNDERWATER_STREAKS
-      if (env.underwater) {
+      if (underWater) {
         float a = atan2(viewDir.x, viewDir.z);
         float grad = 0.5 + 0.5*viewDir.y;
         grad *= grad;
@@ -149,11 +142,11 @@ vec3 nlRenderSky(nl_skycolor skycol, nl_environment env, vec3 viewDir, vec3 FOG_
         float streaks = spread*spread;
         streaks *= streaks;
         streaks = (spread + 3.0*grad*grad + 4.0*streaks*streaks);
-        sky += 2.0*streaks*skycol.horizon;
+        sky += 2.0*streaks*horizonCol;
       } else 
     #endif
-    if (!env.nether) {
-      sky += getSunBloom(viewDir.x, skycol.horizonEdge, FOG_COLOR);
+    if (!nether) {
+      sky += getSunBloom(viewDir.x, horizonEdgeCol, FOG_COLOR);
     }
   }
 
@@ -161,18 +154,25 @@ vec3 nlRenderSky(nl_skycolor skycol, nl_environment env, vec3 viewDir, vec3 FOG_
 }
 
 // sky reflection on plane
-vec3 getSkyRefl(nl_skycolor skycol, nl_environment env, vec3 viewDir, vec3 FOG_COLOR, float t, float h) {
+vec3 getSkyRefl(vec3 horizonEdgeCol, vec3 horizonCol, vec3 zenithCol, vec3 viewDir, vec3 FOG_COLOR, float t, float h, float rainFactor, bool end, bool underWater, bool nether) {
   viewDir.y = -viewDir.y;
-  vec3 refl = nlRenderSky(skycol, env, viewDir, FOG_COLOR, t);
+  vec3 refl = nlRenderSky(horizonEdgeCol, horizonCol, zenithCol, viewDir, FOG_COLOR, t, rainFactor, end, underWater, nether);
 
-  if (!(env.underwater || env.nether)) {
+  if (!(underWater || nether)) {
     float specular = smoothstep(0.7, 0.0, abs(viewDir.z));
     specular *= 2.0*max(FOG_COLOR.r-FOG_COLOR.b, 0.0);
     specular *= specular*viewDir.x;
-    refl += skycol.horizonEdge * specular * specular;
+    refl += horizonEdgeCol * specular * specular;
   }
 
   return refl;
+}
+
+// simpler sky reflection for rain
+vec3 getRainSkyRefl(vec3 horizonCol, vec3 zenithCol, float h) {
+  h = 1.0-h*h;
+  h *= h;
+  return mix(zenithCol, horizonCol, h*h);
 }
 
 // shooting star
@@ -209,41 +209,43 @@ vec3 nlRenderShootingStar(vec3 viewDir, vec3 FOG_COLOR, float t) {
   return s*vec3(0.8, 0.9, 1.0);
 }
 
-nl_skycolor nlUnderwaterSkyColors(float rainFactor, vec3 FOG_COLOR) {
-  nl_skycolor s;
-  s.zenith = getUnderwaterCol(FOG_COLOR);
-  s.horizon = s.zenith;
-  s.horizonEdge = s.zenith;
-  return s;
-}
+vec3 renderSun(vec3 sPos, float sunAngle, float height, float scale, float sunBrightness){
+vec3 color = vec3(0.0,0.0,0.0);
 
-nl_skycolor nlEndSkyColors(float rainFactor, vec3 FOG_COLOR) {
-  nl_skycolor s;
-  s.zenith = getEndZenithCol();
-  s.horizon = getEndHorizonCol();
-  s.horizonEdge = s.horizon;
-  return s;
-}
+float renderSunAngle = 90.0*0.0174533;
+      float sinAS = sin(renderSunAngle);
+      float cosAS = cos(renderSunAngle);
+      sPos.xz = vec2(sPos.x*cosAS - sPos.z*sinAS, sPos.x*sinAS + sPos.z*cosAS);
 
-nl_skycolor nlOverworldSkyColors(float rainFactor, vec3 FOG_COLOR) {
-  nl_skycolor s;
-  vec3 fs = getSkyFactors(FOG_COLOR);
-  s.zenith= getZenithCol(rainFactor, FOG_COLOR, fs);
-  s.horizon= getHorizonCol(rainFactor, FOG_COLOR, fs);
-  s.horizonEdge= getHorizonEdgeCol(s.horizon, rainFactor, FOG_COLOR);
-  return s;
-}
 
-nl_skycolor nlSkyColors(nl_environment env, vec3 FOG_COLOR) {
-  nl_skycolor s;
-  if (env.underwater) {
-    s = nlUnderwaterSkyColors(env.rainFactor, FOG_COLOR);
-  } else if (env.end) {
-    s = nlEndSkyColors(env.rainFactor, FOG_COLOR);
-  } else {
-    s = nlOverworldSkyColors(env.rainFactor, FOG_COLOR);
-  }
-  return s;
+float angle = sunAngle*0.0174533;
+      float sinA = sin(angle);
+      float cosA = cos(angle);
+      sPos.yz = vec2(sPos.y*cosA - sPos.z*sinA, sPos.y*sinA + sPos.z*cosA);
+
+sPos.y *= height;
+
+vec3 sunDir = normalize(sPos);
+vec3 moonDir = normalize(-sPos);
+float sunShape = smoothstep(0.9,1.0,sunDir.z*0.903*scale);
+float moonShape = smoothstep(0.9,1.0,moonDir.z*0.903*scale);
+float sunBloomS = smoothstep(0.9,1.0,sunDir.z*0.945*scale);
+float moonBloomS = smoothstep(0.9,1.0,moonDir.z*0.945*scale);
+
+vec3 sunCol = vec3(1.0,0.8,0.7)*100000.0*sunShape;
+vec3 moonCol = vec3(1.0,1.0,1.0)*100000.0*moonShape;
+vec3 sunBloom = vec3(1.0,0.8,0.6)*3.0*sunBloomS;
+vec3 moonBloom = vec3(1.0,1.0,1.0)*3.0*moonBloomS;
+
+sunCol += sunBloom;
+
+color.rgb += sunCol;
+
+moonCol += moonBloom;
+
+color.rgb += moonCol;
+
+return color.rgb*sunBrightness;
 }
 
 #endif

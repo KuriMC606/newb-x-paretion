@@ -1,18 +1,32 @@
 #ifndef FOG_H
 #define FOG_H
 
-float nlRenderFogFade(float relativeDist, vec3 FOG_COLOR, vec2 FOG_CONTROL) {
-  #ifdef NL_FOG
-    float fade = smoothstep(FOG_CONTROL.x, FOG_CONTROL.y, relativeDist);
+#include "tonemap.h"
 
-    // misty effect
-    float density = NL_MIST_DENSITY*(19.0 - 18.0*FOG_COLOR.g);
-    fade += (1.0-fade)*(0.3-0.3*exp(-relativeDist*relativeDist*density));
-
-    return NL_FOG * fade;
-  #else
+float nlRenderFogFade(float relativeDist, vec3 FOG_COLOR, vec3 FOG_CONTROL) {
+  #if NL_FOG_TYPE == 0
+    // no fog
     return 0.0;
   #endif
+
+  #if NL_FOG_TYPE == 1
+    // linear transition
+    float fade = clamp((relativeDist-FOG_CONTROL.x)/(FOG_CONTROL.y-FOG_CONTROL.x), 0.0, 1.0);
+  #else
+    // smoother transition
+    float fade = smoothstep(FOG_CONTROL.x, FOG_CONTROL.y, relativeDist);
+  #endif
+
+  // misty effect
+  
+  vec4 worldTime = worldTimeDetection(FOG_COLOR, FOG_CONTROL);
+  
+  float mistDen = mix(mix(NL_MIST_DENSITY_DAY, NL_MIST_DENSITY_DAWN, worldTime.x), NL_MIST_DENSITY_NIGHT, worldTime.z);
+  
+  float density = mistDen*(19.0 - 18.0*FOG_COLOR.g);
+  fade += (1.0-fade)*(0.3-0.3*exp(-relativeDist*relativeDist*density));
+
+  return fade;
 }
 
 float nlRenderGodRayIntensity(vec3 cPos, vec3 worldPos, float t, vec2 uv1, float relativeDist, vec3 FOG_COLOR) {
@@ -35,7 +49,7 @@ float nlRenderGodRayIntensity(vec3 cPos, vec3 worldPos, float t, vec2 uv1, float
 
   // dawn/dusk mask
   vol *= clamp(3.0*(FOG_COLOR.r-FOG_COLOR.b), 0.0, 1.0);
-
+  
   vol = smoothstep(0.0, 0.1, vol);
   return vol;
 }

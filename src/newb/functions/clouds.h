@@ -2,7 +2,6 @@
 #define CLOUDS_H
 
 #include "noise.h"
-#include "sky.h"
 
 // simple clouds 2D noise
 float cloudNoise2D(vec2 p, highp float t, float rain) {
@@ -23,7 +22,7 @@ float cloudNoise2D(vec2 p, highp float t, float rain) {
 }
 
 // simple clouds
-vec4 renderCloudsSimple(nl_skycolor skycol, vec3 pos, highp float t, float rain) {
+vec4 renderCloudsSimple(vec3 pos, highp float t, float rain, vec3 zenithCol, vec3 horizonCol, vec3 horizonEdgeCol) {
   pos.xz *= NL_CLOUD1_SCALE;
 
   float cloudAlpha = cloudNoise2D(pos.xz, t, rain);
@@ -31,10 +30,10 @@ vec4 renderCloudsSimple(nl_skycolor skycol, vec3 pos, highp float t, float rain)
 
   vec4 color = vec4(0.02,0.04,0.05,cloudAlpha);
 
-  color.rgb += skycol.horizonEdge;
+  color.rgb += horizonEdgeCol;
   color.rgb *= 1.0 - 0.5*cloudShadow*step(0.0, pos.y);
 
-  color.rgb += skycol.zenith*0.7;
+  color.rgb += zenithCol*0.7;
   color.rgb *= 1.0 - 0.4*rain;
 
   return color;
@@ -61,6 +60,16 @@ float cloudDf(vec3 pos, float rain) {
   return smoothstep(0.2, 1.0, n * b);
 }
 
+float fbmVolumetricCloudDf(vec3 pos, float rain){
+
+float n = 1.0*fbm(pos);
+
+float t = mix(0.5, 1.0, rain);
+
+float b = 1.0 - 1.9*smoothstep(0.0, 2.0 - 0.0, 2.0*abs(pos.y-0.5));
+  return smoothstep(1.0-t, 1.0, n);
+}
+
 vec4 renderClouds(vec3 vDir, vec3 vPos, float rain, float time, vec3 fogCol, vec3 skyCol) {
 
   float height = 7.0*mix(NL_CLOUD2_THICKNESS, NL_CLOUD2_RAIN_THICKNESS, rain);
@@ -83,7 +92,14 @@ vec4 renderClouds(vec3 vDir, vec3 vPos, float rain, float time, vec3 fogCol, vec
   // alpha, gradient
   vec2 d = vec2(0.0,1.0);
   for (int i=1; i<=NL_CLOUD2_STEPS; i++) {
-    float m = cloudDf(pos, rain);
+    float m;
+    #if NL_CLOUD2_DENSITY_TYPE == 1
+    m = cloudDf(pos, rain);
+    #elif NL_CLOUD2_DENSITY_TYPE == 2
+    m = fbmVolumetricCloudDf(pos, rain);
+    #elif NL_CLOUD2_DENSITY_TYPE == 3
+    //m = fractalVolumetricCloudDf(pos, rain);
+    #endif
     
     d.x += m;
     d.y = mix(d.y, pos.y, m);

@@ -1,13 +1,6 @@
 #ifndef DETECTION_H
 #define DETECTION_H
 
-struct nl_environment {
-  bool end;
-  bool nether;
-  bool underwater;
-  float rainFactor;
-};
-
 bool detectEnd(vec3 FOG_COLOR, vec2 FOG_CONTROL) {
   // custom fog color set in biomes_client.json to help in detection
   return FOG_COLOR.r==FOG_COLOR.b && (FOG_COLOR.r-FOG_COLOR.g>0.24 || (FOG_COLOR.g==0.0 && FOG_COLOR.r>0.1));
@@ -44,13 +37,15 @@ float detectRain(vec3 FOG_CONTROL) {
   return val*val*(3.0 - 2.0*val);
 }
 
-nl_environment nlDetectEnvironment(vec3 FOG_COLOR, vec3 FOG_CONTROL) {
-  nl_environment e;
-  e.end = detectEnd(FOG_COLOR, FOG_CONTROL.xy);
-  e.nether = detectNether(FOG_COLOR, FOG_CONTROL.xy);
-  e.underwater = detectUnderwater(FOG_COLOR, FOG_CONTROL.xy);
-  e.rainFactor = detectRain(FOG_CONTROL.xyz);
-  return e;
+vec4 worldTimeDetection(vec3 v_FogColor, vec3 v_FogControl){
+
+//dynamic time
+ float day = pow(max(min(1.0 - v_FogColor.r * 1.2, 1.0), 0.0), 0.4);
+  float night = pow(max(min(1.0 - v_FogColor.r * 1.5, 1.0), 0.0), 1.2);
+  float dusk = max(v_FogColor.r - v_FogColor.b, 0.0);
+  float rain = mix(smoothstep(0.66, 0.3, v_FogControl.x), 0.0, step(v_FogControl.x, 0.0));
+
+return vec4(dusk, day, night, rain);
 }
 
 #endif

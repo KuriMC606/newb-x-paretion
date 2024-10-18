@@ -28,8 +28,8 @@ vec3 colorCorrection(vec3 col) {
     col = 1.0-exp(-col*0.8);
   #endif
 
-  // gamma correction
-  col = pow(col, vec3_splat(1.0/NL_GAMMA));
+  // gamma correction + contrast
+  col = pow(col, vec3_splat(NL_CONTRAST));
 
   #ifdef NL_SATURATION
     col = mix(vec3_splat(dot(col,vec3(0.21, 0.71, 0.08))), col, NL_SATURATION);
@@ -44,18 +44,19 @@ vec3 colorCorrection(vec3 col) {
 
 // inv used in fogcolor for nether
 vec3 colorCorrectionInv(vec3 col) {
+
   #ifdef NL_TINT
     col /= NL_TINT;
   #endif
 
-  #ifdef NL_SATURATION
-    col = mix(vec3_splat(dot(col,vec3(0.21, 0.71, 0.08))), col, 1.0/NL_SATURATION);
-  #endif
+  //#ifdef NL_SATURATION
+  //  col = mix(vec3_splat(dot(col,vec3(0.21, 0.71, 0.08))), col, NL_SATURATION);
+  //#endif
 
   // incomplete
   // extended reinhard only
   float ws = 0.7966;
-  col = pow(col, vec3_splat(NL_GAMMA));
+  col = pow(col, vec3_splat(1.0/NL_CONTRAST));
   col = col*(ws + col)/(ws + col*(1.0 - ws));
 
   #ifdef NL_EXPOSURE
