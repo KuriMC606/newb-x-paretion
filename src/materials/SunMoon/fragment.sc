@@ -69,11 +69,11 @@ vec3 lensflare(vec2 uv,vec2 pos)
 	float f62 = max(0.01-pow(length(uvx-0.325*pos),1.6),.0)*3.0;
 	float f63 = max(0.01-pow(length(uvx-0.35*pos),1.6),.0)*5.0;
 
-	vec3 c = vec3(.0);
+	vec3 c = vec3(0.0,0.0,0.0);
 
 	c.r+=f2+f4+f5+f6; c.g+=f22+f42+f52+f62; c.b+=f23+f43+f53+f63;
 	c = c*1.3 - vec3(length(uvd)*.05);
-	c+=vec3(f0);
+	c+=vec3(f0, f0, f0);
 
 	return c;
 }
