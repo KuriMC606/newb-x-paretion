@@ -81,7 +81,7 @@ vec3 lensflare(vec2 uv,vec2 pos)
 vec3 cc(vec3 color, float factor,float factor2) // color modifier
 {
 	float w = color.x+color.y+color.z;
-	return mix(color,vec3(w)*factor,w*factor2);
+	return mix(color,vec3(w, w ,w)*factor,w*factor2);
 }
 
 void main() {
