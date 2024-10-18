@@ -1,5 +1,5 @@
-name = "Newb X Legacy"
-version = [0, 15, 0]
+name = "Newb X Paretion Reimagined"
+version = [0, 16, 0]
 min_supported_mc_version = [1, 21, 20]
 description = '''
 §c%w
@@ -7,9 +7,9 @@ description = '''
 %v
 §3https://devendrn.github.io/newb-shader/
 ''' # %w = patch warning, %v = version
-authors = ["devendrn"]
+authors = ["devendrn", "kurimc"]
 url = "https://devendrn.github.io/newb-shader/"
-uuid = "95f774cf-4afa-73e7-a21a-72146307b1d2" # Use https://www.uuidgenerator.net/version4
+uuid = "e689a303-bc6a-4571-b32e-fa67ba2f5e22" # Use https://www.uuidgenerator.net/version4
 materials = ["Sky", "LegacyCubemap", "Clouds", "EndSky", "SunMoon", "RenderChunk", "Weather", "Actor"]
 
 [info] 
@@ -25,20 +25,6 @@ credits = '''
 # right-most subpack is enabled by default
 
 [[subpack]]
-define = "ROUNDED_CLOUDS"
-materials = ["Clouds"]
-description = '''
-Rounded Clouds
-'''
-
-[[subpack]]
-define = "BOX_CLOUDS"
-materials = ["Clouds", "RenderChunk"]
-description = '''
-Box Clouds
-'''
-
-[[subpack]]
 define = "CHUNK_ANIM"
 materials = ["RenderChunk"]
 description = '''
@@ -46,24 +32,31 @@ Chunk loading animation
 '''
 
 [[subpack]]
-define = "NO_WAVE_NO_FOG"
-materials = ["RenderChunk"]
+define = "LENS_FLARE"
+materials = ["RenderChunk", "SunMoon"]
 description = '''
-No fog and wave effects
+Lens flare effect
 '''
 
 [[subpack]]
-define = "NO_FOG"
-materials = ["RenderChunk"]
+define = "RAINBOW_IN_RAIN"
+materials = ["RenderChunk", "Clouds", "Sky", "LegacyCubemap"]
 description = '''
-No fog effect
+Rainbows only appear when it rains 
 '''
 
 [[subpack]]
-define = "NO_WAVE"
-materials = ["RenderChunk"]
+define = "RAINBOW"
+materials = ["RenderChunk", "Clouds", "Sky", "LegacyCubemap"]
 description = '''
-No wave effects
+Rainbow
+'''
+
+[[subpack]]
+define = "VOLUMETRIC_CLOUDS"
+materials = ["RenderChunk", "Clouds"]
+description = '''
+Volumetric clouds
 '''
 
 [[subpack]]
