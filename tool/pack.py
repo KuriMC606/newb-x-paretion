@@ -151,6 +151,7 @@ def run(args):
         shutil.rmtree(pack_dir)
     shutil.copytree('assets', pack_dir)
 
+
     pack_description: str = pack_config['description']
 
     patch_warning = "Only works with "
