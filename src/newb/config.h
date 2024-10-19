@@ -115,6 +115,7 @@
 #define NL_FAKE_SUN_SIZE 0.997
 #define NL_FAKE_SUN_BRIGHTNESS 0.25
 #define NL_WATER_TINT vec3(0.52,0.9,0.45)
+#define NL_NEW_WATER
 
 /* Underwater */
 #define NL_UNDERWATER_BRIGHTNESS 0.8         // 0.0 dark ~ 3.0 bright
@@ -220,6 +221,10 @@
 
 #ifdef CHUNK_ANIM
 #define NL_CHUNK_LOAD_ANIM 100.0
+#endif
+
+#ifdef DEFAULT_WATER
+#undef NL_NEW_WATER
 #endif
 
 #endif
