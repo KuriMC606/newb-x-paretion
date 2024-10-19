@@ -98,7 +98,10 @@ void main() {
 
   if (v_extra.b > 0.9) {
     diffuse.rgb += v_refl.rgb*v_refl.a;
-    vec3 normal = getWaterNormalMapFromHeight(mod(v_position.xz,16.0)+0.1*ViewPositionAndTime.w, vec2(20.0, 20.0), 1.2, 0.5*ViewPositionAndTime.w).xzy;
+
+#ifdef NL_NEW_WATER
+
+vec3 normal = getWaterNormalMapFromHeight(mod(v_position.xz,16.0)+0.1*ViewPositionAndTime.w, vec2(20.0, 20.0), 1.2, 0.5*ViewPositionAndTime.w).xzy;
       vec3 cloudPos = v_worldPos;
       
       cloudPos.y = mix(cloudPos.y, -cloudPos.y, dy);
@@ -156,7 +159,9 @@ void main() {
       #endif
       
       diffuse.rgb *= vec3(0.8,0.8,0.99);
-      
+
+ #endif
+
   } else if (v_refl.a > 0.0) {
     // reflective effect - only on xz plane
     float dy = abs(dFdy(v_extra.g));
