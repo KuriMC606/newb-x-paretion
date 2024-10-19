@@ -60,6 +60,13 @@ Volumetric clouds
 '''
 
 [[subpack]]
+define = "DEFAULT_WATER"
+materials = ["RenderChunk"]
+description = '''
+nước gốc của newb
+'''
+
+[[subpack]]
 define = "DEFAULT"
 materials = []
 description = '''
